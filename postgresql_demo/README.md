@@ -18,6 +18,12 @@ configuration (`database=minimaxh3`, `user=h3`, `password=h3`, `port=5432`):
 ./docker.sh
 ```
 
+The launcher joins the shared `minimax-h3` Docker bridge network, creating it if
+needed. For the API on the same Docker host, the default database address is
+`minimax-h3-postgres:5432`. Set `H3_DOCKER_NETWORK` consistently across all H3
+launchers to use a different network. Host-based development still connects
+through the published port at `127.0.0.1:5432`.
+
 Point the API service at the PostgreSQL server address:
 
 ```text
