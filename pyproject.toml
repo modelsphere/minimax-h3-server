@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "minimax-h3-service"
-version = "0.1.21"
+version = "0.2.0"
 description = "Self-hosted MiniMax H3 compatible API and stateless router"
 requires-python = ">=3.11"
 dependencies = [
