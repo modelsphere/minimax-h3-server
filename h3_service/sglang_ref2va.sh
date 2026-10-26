@@ -13,10 +13,13 @@ fi
 data_dir="${H3_DATA_DIR:-/srv/minimax-h3}"
 output_dir="${H3_REF2VA_OUTPUT_DIR:-$data_dir/ref2va-output}"
 model_dir="${H3_REF2VA_MODEL_DIR:-/srv/models/MiniMax-H3/Ref2VA}"
+docker_network="${H3_DOCKER_NETWORK:-minimax-h3}"
+docker network inspect "$docker_network" >/dev/null 2>&1 || docker network create "$docker_network" >/dev/null
 mkdir -p "$output_dir" "$data_dir"
 docker rm -f minimax-h3-sglang-ref2va 2>/dev/null || true
 docker run -d \
   --name minimax-h3-sglang-ref2va \
+  --network "$docker_network" \
   --restart unless-stopped \
   --gpus all \
   --ipc host \

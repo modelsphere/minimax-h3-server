@@ -3,10 +3,13 @@ set -e
 
 data_dir="${H3_DATA_DIR:-/srv/minimax-h3}"
 model_dir="${H3_FL2VA_MODEL_DIR:-/srv/models/MiniMax-H3/FL2VA}"
+docker_network="${H3_DOCKER_NETWORK:-minimax-h3}"
+docker network inspect "$docker_network" >/dev/null 2>&1 || docker network create "$docker_network" >/dev/null
 mkdir -p "$data_dir/sglang-output"
 docker rm -f minimax-h3-sglang 2>/dev/null || true
 docker run -d \
   --name minimax-h3-sglang \
+  --network "$docker_network" \
   --restart unless-stopped \
   --gpus all \
   --ipc host \

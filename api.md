@@ -30,7 +30,7 @@ SGLang A/B/Ref    ──► 同一个共享挂载盘
 |---|---|---:|---|
 | H3 Server | `4pdosc/minimax-h3-server` | 8000 | `python -m h3_service.server` |
 | H3 Router | `4pdosc/minimax-h3-router` | 8080 | `python -m h3_router.server` |
-| SGLang | `lmsysorg/sglang:v0.5.18-cu129`(FL2VA)/ `lmsysorg/sglang:v0.5.19`(Ref2VA,首尾帧与参考素材混用需 v0.5.19+) | 30010 | 使用下方 GPU 参数启动 |
+| SGLang | `lmsysorg/sglang:v0.5.19`(FL2VA / Ref2VA，首尾帧与参考素材混用需 v0.5.19+) | 30010 | 使用下方 GPU 参数启动 |
 
 SGLang 启动参数至少包含：
 

@@ -43,7 +43,7 @@ the mounted asset namespace so any H3 service can answer task operations.
 | --- | --- |
 | H3 Server | `4pdosc/minimax-h3-server` |
 | H3 Router | `4pdosc/minimax-h3-router` |
-| SGLang (FL2VA) | `lmsysorg/sglang:v0.5.18-cu129` |
+| SGLang (FL2VA) | `lmsysorg/sglang:v0.5.19` |
 | SGLang (Ref2VA) | `lmsysorg/sglang:v0.5.19` |
 
 Ref2VA requests that mix reference media with first/last frames need SGLang
@@ -92,26 +92,38 @@ Build the images on the build machine:
 set `H3_SERVER_IMAGE` / `H3_ROUTER_IMAGE` to tag them for your registry. Builds use
 PyPI by default; pass `--build-arg PIP_INDEX_URL=<mirror>` to use a mirror.
 
-Run the services on their respective deployment machines. The launchers default
-to the published images and local addresses; override them with environment
+For a single-host Docker deployment, run the following launchers. They create or
+reuse a shared bridge network (`minimax-h3`) and connect through container names,
+so the defaults work without treating a container's loopback as the host. Set
+`H3_DOCKER_NETWORK` consistently to use another network. The launchers default
+to the published images; override them with environment
 variables (`H3_DATABASE_URL`, `H3_SGLANG_URL`, `H3_DATA_DIR`,
 `H3_FL2VA_MODEL_DIR`, `H3_REF2VA_MODEL_DIR`, `H3_FL2VA_SERVICE_URLS`,
 `H3_REF2VA_SERVICE_URLS`, `H3_SERVER_IMAGE`, `H3_ROUTER_IMAGE`, `H3_SGLANG_IMAGE`):
 
 ```bash
 ./postgresql_demo/docker.sh
+until docker exec minimax-h3-postgres pg_isready -U h3 -d minimaxh3; do sleep 1; done
 ./h3_service/sglang.sh
 ./h3_service/docker.sh
 ./h3_router/docker.sh
 ```
+
+When services run on different machines, set `H3_DATABASE_URL`, `H3_SGLANG_URL`
+and the Router's backend URLs to addresses reachable from their containers.
+Docker network names and container DNS are local to one Docker host. Use a
+distinct reachable SGLang URL per backend so another API replica can poll it
+when taking over a task.
 
 The API and SGLang containers must mount the same host directory at the paths
 specified by `H3_STORAGE_ROOT` and `H3_SGLANG_MEDIA_ROOT`. `docker.sh` starts the
 API container with this layout. `h3_service/sglang.sh` starts FL2VA with 4 GPUs,
 TP 2 and Ulysses 2; `h3_service/sglang_ref2va.sh` starts Ref2VA with 4 GPUs,
 TP 4 and Ulysses 1. The same H3 Server image and `docker.sh` are used for both
-capabilities: set `H3_SERVICE_CAPABILITY=ref2va` and point `H3_SGLANG_URL` to the
-Ref2VA SGLang address on the Ref machine. Download URLs are built from the
+capabilities: `H3_SERVICE_CAPABILITY=ref2va` selects the Ref2VA SGLang container
+on the same host; override `H3_SGLANG_URL` for a remote backend. The launchers use
+fixed container names and published ports, so run one capability per host with
+these scripts, or use the Helm chart for both pools. Download URLs are built from the
 current request host and forwarded headers, so no public URL setting is needed.
 No FTP service or upload is used.
 
@@ -123,8 +135,7 @@ hf download lightx2v/Minimax-h3-Turbo \
   minimax_h3_ref2v_turbo_8step_v1.0_768p_bf16.safetensors \
   --local-dir /srv/models/Minimax-h3-Turbo
 ./h3_service/sglang_ref2va.sh
-H3_SERVICE_CAPABILITY=ref2va H3_SGLANG_URL=http://127.0.0.1:30010 \
-  ./h3_service/docker.sh
+H3_SERVICE_CAPABILITY=ref2va ./h3_service/docker.sh
 ```
 
 Both launchers source `h3_service/ref2va_profile.sh`. The shared switch
@@ -154,8 +165,7 @@ To return to base Ref2VA, set the shared switch to `false` for both launchers:
 ```bash
 export H3_REF2VA_TURBO_ENABLED=false
 ./h3_service/sglang_ref2va.sh
-H3_SERVICE_CAPABILITY=ref2va H3_SGLANG_URL=http://127.0.0.1:30010 \
-  ./h3_service/docker.sh
+H3_SERVICE_CAPABILITY=ref2va ./h3_service/docker.sh
 ```
 
 This removes the LoRA arguments and mount and omits `num_inference_steps`,
