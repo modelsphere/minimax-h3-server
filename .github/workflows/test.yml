@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12"]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: h3
+          POSTGRES_PASSWORD: h3
+          POSTGRES_DB: minimaxh3
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U h3 -d minimaxh3"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Runs tests/test_task_store_db.py too, which is skipped without a database.
+      H3_TEST_DATABASE_URL: postgresql://h3:h3@127.0.0.1:5432/minimaxh3
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e '.[test]'
+      - run: pytest -p no:cacheprovider
+      - name: Shell scripts parse
+        run: for f in h3_service/*.sh h3_router/*.sh postgresql_demo/*.sh; do bash -n "$f"; done

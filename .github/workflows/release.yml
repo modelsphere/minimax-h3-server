@@ -1,0 +1,103 @@
+# Publish the H3 Server and H3 Router images, at one version.
+#
+#   push to main      <version>-git<sha7>
+#   tag v<X>          <X>, which must be pyproject.toml's version; both images also take latest
+#   tag v<X>-<pre>    <X>-<pre> (v0.2.0-rc1), a candidate for <X>; never takes latest
+#   pull request      build only; nothing pushed
+#
+# Images: 4pdosc/minimax-h3-server, 4pdosc/minimax-h3-router on Docker Hub, and the same
+# names under ghcr.io/<owner>. Needs DOCKERHUB_USERNAME / DOCKERHUB_TOKEN secrets; GHCR
+# uses the workflow's GITHUB_TOKEN.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: minimax-h3-server
+            context: h3_service
+          - name: minimax-h3-router
+            context: h3_router
+    env:
+      PUSH: ${{ github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Version
+        id: v
+        env:
+          NAME: ${{ matrix.name }}
+        run: |
+          set -eu
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          app=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
+          hub="4pdosc/$NAME"
+          ghcr="ghcr.io/$owner/$NAME"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            # A prerelease is a candidate for the version it names: compare the core only.
+            if [ "${version%%-*}" != "$app" ]; then
+              echo "tag $GITHUB_REF_NAME, but pyproject.toml version is $app; bump it before tagging" >&2
+              exit 1
+            fi
+            tags="$hub:$version,$ghcr:$version"
+            case "$version" in
+              *-*) echo "prerelease $version: not tagging latest" >&2 ;;
+              *)   tags="$tags,$hub:latest,$ghcr:latest" ;;
+            esac
+          else
+            version="$app-git${GITHUB_SHA:0:7}"
+            tags="$hub:$version,$ghcr:$version"
+          fi
+          { echo "version=$version"; echo "tags=$tags"; } >>"$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4.4.1
+
+      - name: Log in to Docker Hub
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: ${{ env.PUSH == 'true' }}
+          tags: ${{ steps.v.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.v.outputs.version }}
+            org.opencontainers.image.licenses=Apache-2.0
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

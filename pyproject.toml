@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minimax-h3-service"
+version = "0.1.21"
+description = "Self-hosted MiniMax H3 compatible API and stateless router"
+requires-python = ">=3.11"
+dependencies = [
+  "av>=14,<17",
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "pillow>=10,<13",
+  "pillow-heif>=0.20,<2",
+  "psycopg[binary]>=3.2,<4",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+h3-service = "h3_service.server:main"
+h3-router = "h3_router.server:main"
+
+[tool.setuptools]
+packages = ["h3_service", "h3_router"]
+
+[tool.setuptools.package-data]
+h3_service = ["dashboard.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
