@@ -67,7 +67,7 @@ Ref2VA SGLang 使用：
 | `H3_ASSET_RETENTION_DAYS` | `30` | 输入素材、缩略图和生成视频的保留天数。 |
 | `H3_ALLOW_PRIVATE_URLS` | `false` | 是否允许输入素材或 Callback 使用内网 URL。 |
 | `H3_MEDIA_TIMEOUT_SECONDS` | `30` | 下载远程输入素材的超时秒数。 |
-| `H3_BACKEND_TIMEOUT_SECONDS` | `30` | 调用 SGLang 的 HTTP 超时秒数。 |
+| `H3_BACKEND_TIMEOUT_SECONDS` | `60` | 调用 SGLang 的 HTTP 超时秒数，适用于提交、状态查询等请求。 |
 | `H3_BACKEND_READY_TIMEOUT_SECONDS` | `2` | Worker 领任务前调用 SGLang `/health` 的超时秒数；未就绪时任务保持 queued。 |
 | `H3_CALLBACK_ATTEMPTS` | `3` | Callback 最大尝试次数。 |
 | `H3_START_WORKERS` | `true` | 是否启动任务、Callback 和清理 Worker。 |
