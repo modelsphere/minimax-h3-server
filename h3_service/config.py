@@ -38,12 +38,12 @@ class Settings:
     asset_retention_days: int = 30
     allow_private_urls: bool = False
     media_timeout_seconds: float = 30.0
-    backend_timeout_seconds: float = 30.0
+    backend_timeout_seconds: float = 60.0
     # Worker 领任务前探测 SGLang /health 的超时。它只用于启动门禁,
     # 应明显短于真正提交/查询任务时的 backend_timeout_seconds。
     backend_ready_timeout_seconds: float = 2.0
     # 抓 /metrics/queue 时问后端队列用的超时,**必须明显短于 Prometheus 的 scrapeTimeout**
-    # (chart 默认 10s)。沿用 backend_timeout(30s)的话:SGLang 连上了但不响应时,
+    # (chart 默认 10s)。沿用 backend_timeout(60s)的话:SGLang 连上了但不响应时,
     # Prometheus 会在我们的异常处理跑到之前就放弃整个请求 —— 于是不但拿不到
     # "后端不可用"这个信号,连同一个端点上的数据库队列指标也一起丢了。
     metrics_backend_timeout_seconds: float = 3.0
@@ -90,7 +90,7 @@ class Settings:
             asset_retention_days=int(os.getenv("H3_ASSET_RETENTION_DAYS", "30")),
             allow_private_urls=_bool_env("H3_ALLOW_PRIVATE_URLS"),
             media_timeout_seconds=float(os.getenv("H3_MEDIA_TIMEOUT_SECONDS", "30")),
-            backend_timeout_seconds=float(os.getenv("H3_BACKEND_TIMEOUT_SECONDS", "30")),
+            backend_timeout_seconds=float(os.getenv("H3_BACKEND_TIMEOUT_SECONDS", "60")),
             backend_ready_timeout_seconds=float(os.getenv("H3_BACKEND_READY_TIMEOUT_SECONDS", "2")),
             metrics_backend_timeout_seconds=float(os.getenv("H3_METRICS_BACKEND_TIMEOUT_SECONDS", "3")),
             shutdown_drain_seconds=float(os.getenv("H3_SHUTDOWN_DRAIN_SECONDS", "600")),
